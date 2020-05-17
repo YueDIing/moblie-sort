@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    *{
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    ul,li{
+      list-style: none;
+    }
+    .list{
+      position: relative;
+      width: 375px;
+      border-right: 1px solid #ccc;
+      -webkit-touch-callout:none;
+      -webkit-user-select:none;
+      -khtml-user-select:none;
+      -moz-user-select:none;
+      -ms-user-select:none;
+      user-select:none;
+    }
+    .list li{
+      display: flex;
+      align-items: center;
+      position: absolute;
+      width: 100%;
+      padding: 0 15px;
+      min-height: 55px;
+      border-top: 1px solid #999;
+    }
+    .drag-over li:not(.selected) .index{
+      background-color: #ccc;
+    }
+    .drag-over li:not(.selected) .icon{
+      display: none;
+    }
+    .index{
+      --size: 30px;
+      width: var(--size);
+      height: var(--size);
+      border-radius: var(--size);
+      margin-right: 15px;
+      color: white;
+      text-align: center;
+      line-height: var(--size);
+      background-color: #2863f3;
+      transition: background-color .3s, color .3s;
+    }
+    .icon{
+      width: 17px;
+      margin-left: auto;
+    }
+    .icon i{
+      width: 100%;
+      height: 2px;
+      display: flex;
+    }
+    .icon i:first-child::before,
+    .icon i:first-child::after,
+    .icon i:last-child::before,
+    .icon i:last-child:after{
+      content: '';
+      display: block;
+      width: 50%;
+      height: 2px;
+      background-color: rgba(0, 0, 0, .4);
+      transition: transform .3s, background-color .3s;
+    }
+    .icon i:nth-child(2){
+      width: 100%;
+      height: 2px;
+      line-height: 2px;
+      background-color: rgba(0, 0, 0, .4);
+      margin: 4px 0;
+    }
+    .list li:not(.selected){
+      transition: top .3s;
+    }
+    .selected{
+      z-index: 2;
+      background-color: #2863f3;
+      user-select: none;
+      box-shadow: 0 0 15px 0 rgba(0, 0, 0, .4)
+    }
+    /* 调整上下的小箭头的角度 */
+    .selected .icon i:first-child::before{
+      transform: rotate(-30deg) translateX(1px);
+    }
+    .selected .icon i:first-child::after{
+      transform: rotate(30deg) translateX(-1px);
+    }
+    .selected .icon i:last-child::before{
+      transform: rotate(30deg) translateX(1px);
+    }
+    .selected .icon i:last-child::after{
+      transform: rotate(-30deg) translateX(-1px);
+    }
+    .selected .icon i::before,
+    .selected .icon i::after{
+      background-color: white;
+    }
+    .selected .icon i:nth-child(2){
+      opacity: 0;
+    }
+    .selected .index{
+      background-color: white;
+      color: #2863f3;
+    }
+    .selected .icon{
+      color: white;
+    }
+  </style>
+</head>
+<body>
+    <ul class="list">
+      <li>
+        <div class="index">1</div>
+        <div>选项A</div>
+        <div class="icon">
+          <i></i>
+          <i></i>
+          <i></i>
+        </div>
+      </li>
+      <li>
+        <div class="index">2</div>
+        <div>选项B</div>
+        <div class="icon">
+          <i></i>
+          <i></i>
+          <i></i>
+        </div>
+      </li>
+      <li>
+        <div class="index">3</div>
+        <div>选项C</div>
+        <div class="icon">
+          <i></i>
+          <i></i>
+          <i></i>
+        </div>
+      </li>
+      <li>
+        <div class="index">4</div>
+        <div>选项D</div>
+        <div class="icon">
+          <i></i>
+          <i></i>
+          <i></i>
+        </div>
+      </li>
+    </ul>
+    <script>
+      // 初始化父节点的高度
+      function initTop () {
+        let items = document.querySelectorAll('.list li');
+        const len = items.length;
+        for (let i = 0; i < len; i++) {
+          items[i].style.top = `${i * 55}px`;
+        }
+        document.querySelector('.list').style.height = items[len - 1].offsetTop + items[len - 1].clientHeight + 'px';
+      }
+      function clearDefault (ev) {
+        ev.preventDefault();
+      }
+      initTop();
+      
+      let wrap = document.querySelector('.list');
+      let list = Array.from(document.querySelectorAll('.list li'));
+      let time = null;
+      wrap.addEventListener('contextmenu', clearDefault)
+      document.addEventListener('touchmove',  clearDefault, false);
+      wrap.ontouchstart = ev => {
+        time = setTimeout(() => {
+          wrap.classList.add('drag-over');
+          const tag = ev.target;
+          const fatherNode = tag.parentNode;
+          const y = ev.touches[0].clientY;
+          const el = fatherNode.nodeName === 'LI' ? fatherNode : tag.nodeName === 'LI' ? tag : null;
+          let position = 0;
+          if (el) {
+            function change (direciton = 1) {
+              let newIndex = index + direciton;
+              let val = 55 * direciton;
+              list[newIndex].style.top = newIndex * 55 - val + 'px';
+              let item = list.splice(index, 1);
+              list.splice(newIndex, 0, item[0]);
+              index = newIndex;
+              list.forEach((item, index) => item.querySelector('.index').innerText = index + 1);
+            }
+            el.classList.add('selected');
+            let listLen = list.length;
+            let index = Math.round(el.offsetTop / 55);
+            let top = el.offsetTop;
+            document.ontouchmove  = e => {
+              const val = Math.max(0, Math.min(e.touches[0].clientY - y + top, wrap.clientHeight - 55));
+              position = Math.round(val / 55);
+              el.style.top = val + 'px';
+              if (index < position) {
+                console.log(position)
+                // 向下
+                change()
+              }
+              // 向上
+              if (index > position) {
+                change(-1)
+              }
+            }
+            document.ontouchend = () => {
+              el.style.top = index * 55 + 'px';
+              wrap.classList.remove('drag-over');
+              el.classList.remove('selected');
+              document.ontouchmove = null;
+              document.ontouchend = null;
+            }
+          }
+        }, 200)
+        document.ontouchend = () => {
+          clearTimeout(time);
+        }
+      }
+    </script>
+</body>
+</html>
